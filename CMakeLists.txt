@@ -10,6 +10,7 @@ set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
 include( UseCython )
 
 include_directories("${PROJECT_BINARY_DIR}")
+include_directories(/data/exifyay)
 add_subdirectory (libexif) 
 add_subdirectory (libjpeg) 
 add_subdirectory (JpegEncoderEXIF) 
@@ -37,3 +38,7 @@ configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.cmake"
     "${CMAKE_CURRENT_SOURCE_DIR}/setup.py"
     )
+
+add_executable(test-exif src/test-exif.c)
+target_link_libraries(test-exif m exif jpeg JpegEncoderEXIF)
+# add_dependencies(test-exif.c)

@@ -61,3 +61,4 @@ add_library (
     pentax/mnote-pentax-tag.c
     )
 SET_TARGET_PROPERTIES( exif PROPERTIES COMPILE_FLAGS "-fPIC")
+target_link_libraries(exif m)
