@@ -112,6 +112,10 @@ int main(int argc, char **argv)
     entry->format = EXIF_FORMAT_SHORT;
     entry->components = 4;
 
+    /* GPS Data */
+    double dlat = 37.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+    double dlon = -122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+    double dalt = 5.4321;
 
     /* GPS Lat */
     {
@@ -128,14 +132,13 @@ int main(int argc, char **argv)
         // value.denominator = (unsigned)1000000 ;
         // exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, value);
 
-        double dlat = 37.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
         // convert double to unsigned long array
-        double coord = dlat;
-        int sec = (int)round(coord * 3600);
+        double coord = fabs(dlat);
+        double sec = round(coord * 3600);
         int deg = sec / 3600;
-        sec = abs(sec % 3600);
+        sec = fabs(sec - 3600*((int)sec/3600));
         int min = sec / 60;
-        sec %= 60;
+        sec = sec - 60*((int)sec/60);
 
         ExifRational secr;
         secr.numerator = (unsigned)(sec * 1000000.0);
@@ -162,14 +165,13 @@ int main(int argc, char **argv)
         // Set the field's format and number of components, this is very important!
         entry->format = EXIF_FORMAT_RATIONAL;
         entry->components = 3;
-        double dlon = 122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
         // convert double to unsigned long array
-        double coord = dlon;
-        int sec = (int)round(coord * 3600);
+        double coord = fabs(dlon);
+        double sec = round(coord * 3600);
         int deg = sec / 3600;
-        sec = abs(sec % 3600);
+        sec = fabs(sec - 3600*((int)sec/3600));
         int min = sec / 60;
-        sec %= 60;
+        sec = sec - 60*((int)sec/60);
 
         ExifRational secr;
         secr.numerator = (unsigned)(sec * 1000000.0);
@@ -188,9 +190,23 @@ int main(int argc, char **argv)
         exif_set_rational(entry->data+2*sizeof(ExifRational), EXIF_BYTE_ORDER_INTEL, secr);
     }
 
+    /* GPS Alt */
+    {
+        // create our latitude tag, the whole  field is 24 bytes long
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE, 8);
+
+        // Set the field's format and number of components, this is very important!
+        entry->format = EXIF_FORMAT_RATIONAL;
+        entry->components = 1;
+
+        ExifRational altr;
+        altr.numerator = (unsigned)(dalt * 1000000);
+        altr.denominator = (unsigned)1000000 ;
+        exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, altr);
+    }
+
     /* GPS Lon Ref */
     {
-        double dlon = -122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
         char value[4] = "West";
         if (dlon > 0) memcpy(value, "East", sizeof(value));
 
@@ -203,6 +219,34 @@ int main(int argc, char **argv)
         entry->format = EXIF_FORMAT_ASCII;
     }
 
+    /* GPS Lat Ref */
+    {
+        char value[5] = "South";
+        if (dlat > 0) memcpy(value, "North", sizeof(value));
+
+        printf("lat ref %d\n", sizeof(value));
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF, sizeof(value));
+        /* Write the actual comment text, without the trailing NUL character */
+        memcpy(entry->data, value, sizeof(value));
+        /* create_tag() happens to set the format and components correctly for
+         * EXIF_TAG_USER_COMMENT, so there is nothing more to do. */
+        entry->format = EXIF_FORMAT_ASCII;
+    }
+
+    /* GPS Alt Ref */
+    {
+        // https://github.com/avsej/exif_geo_tag/blob/master/ext/exif_geo_tag.c
+        int value = 0;  // above sea
+
+        printf("Alt ref %d\n", sizeof(value));
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_ALTITUDE_REF, sizeof(value));
+        /* Write the actual comment text, without the trailing NUL character */
+        memcpy(entry->data, &value, sizeof(value));
+        /* create_tag() happens to set the format and components correctly for
+         * EXIF_TAG_USER_COMMENT, so there is nothing more to do. */
+        entry->format = EXIF_FORMAT_BYTE;
+        entry->components = 1;
+    }
 
     //Write back exif data
     jpeg_data_set_exif_data(mJpegData,mExifData);
