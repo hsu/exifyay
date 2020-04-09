@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project (EXIFYAY)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # Make the scripts available in the 'cmake' directory available for the
 # 'include()' command, 'find_package()' command.
 set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )

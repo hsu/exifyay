@@ -71,19 +71,32 @@ int main(int argc, char **argv)
     ExifEntry *entry;
 
     //Input JPG
-    char mInputFilename[]="example.jpg";
+    char mInputFilename[]="/data/exifyay/build/example.jpg";
+    printf("file: %s\n", mInputFilename);
 
     //Load JPG
     JPEGData * mJpegData = jpeg_data_new_from_file(mInputFilename);
+    printf("mJpegData %d\n", (int)mJpegData);
 
     //Load Exif data from JPG
     ExifData * mExifData = jpeg_data_get_exif_data(mJpegData);
+    printf("mExifData %d\n", (int)mExifData);
+
+    if (mExifData == NULL)
+    {
+        mExifData = exif_data_new();
+    }
+
+
+    // python command for example
+    // "exiftool -GPSLatitude=\"%s\" -GPSLongitude=\"%s\" -GPSLongitudeRef=\"%s\" -GPSLatitudeRef=\"%s\" -GPSAltitudeRef=\'Above Sea level\' -GPSAltitude=\"%s\" %s*"
 
     //Set some Exif options
     exif_data_set_option(mExifData, EXIF_DATA_OPTION_FOLLOW_SPECIFICATION);
     exif_data_set_data_type(mExifData, EXIF_DATA_TYPE_COMPRESSED);
     exif_data_set_byte_order(mExifData, FILE_BYTE_ORDER);
 
+    /* example text */
     entry = create_tag(mExifData, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT, 
             sizeof(ASCII_COMMENT) + sizeof(FILE_COMMENT) - 2);
     /* Write the special header needed for a comment tag */
@@ -98,6 +111,98 @@ int main(int argc, char **argv)
                4 * exif_format_get_size(EXIF_FORMAT_SHORT));
     entry->format = EXIF_FORMAT_SHORT;
     entry->components = 4;
+
+
+    /* GPS Lat */
+    {
+        // create our latitude tag, the whole  field is 24 bytes long
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, 24);
+
+        // Set the field's format and number of components, this is very important!
+        entry->format = EXIF_FORMAT_RATIONAL;
+        entry->components = 3;
+        // Degrees
+        // float lat = 37.12345678987654321;
+        // ExifRational value;
+        // value.numerator = (unsigned)(lat * 1000000.0);
+        // value.denominator = (unsigned)1000000 ;
+        // exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, value);
+
+        double dlat = 37.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+        // convert double to unsigned long array
+        double coord = dlat;
+        int sec = (int)round(coord * 3600);
+        int deg = sec / 3600;
+        sec = abs(sec % 3600);
+        int min = sec / 60;
+        sec %= 60;
+
+        ExifRational secr;
+        secr.numerator = (unsigned)(sec * 1000000.0);
+        secr.denominator = (unsigned)1000000 ;
+
+        ExifRational degr;
+        degr.numerator = (unsigned)(deg * 1000000.0);
+        degr.denominator = (unsigned)1000000 ;
+
+        ExifRational minr;
+        minr.numerator = (unsigned)(min * 1000000.0);
+        minr.denominator = (unsigned)1000000 ;
+
+        exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, degr);
+        exif_set_rational(entry->data+sizeof(ExifRational), EXIF_BYTE_ORDER_INTEL, minr);
+        exif_set_rational(entry->data+2*sizeof(ExifRational), EXIF_BYTE_ORDER_INTEL, secr);
+    }
+
+    /* GPS Lon */
+    {
+        // create our latitude tag, the whole  field is 24 bytes long
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE, 24);
+
+        // Set the field's format and number of components, this is very important!
+        entry->format = EXIF_FORMAT_RATIONAL;
+        entry->components = 3;
+        double dlon = 122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+        // convert double to unsigned long array
+        double coord = dlon;
+        int sec = (int)round(coord * 3600);
+        int deg = sec / 3600;
+        sec = abs(sec % 3600);
+        int min = sec / 60;
+        sec %= 60;
+
+        ExifRational secr;
+        secr.numerator = (unsigned)(sec * 1000000.0);
+        secr.denominator = (unsigned)1000000 ;
+
+        ExifRational degr;
+        degr.numerator = (unsigned)(deg * 1000000.0);
+        degr.denominator = (unsigned)1000000 ;
+
+        ExifRational minr;
+        minr.numerator = (unsigned)(min * 1000000.0);
+        minr.denominator = (unsigned)1000000 ;
+
+        exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, degr);
+        exif_set_rational(entry->data+sizeof(ExifRational), EXIF_BYTE_ORDER_INTEL, minr);
+        exif_set_rational(entry->data+2*sizeof(ExifRational), EXIF_BYTE_ORDER_INTEL, secr);
+    }
+
+    /* GPS Lon Ref */
+    {
+        double dlon = -122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+        char value[4] = "West";
+        if (dlon > 0) memcpy(value, "East", sizeof(value));
+
+        printf("lon ref %d\n", sizeof(value));
+        entry = create_tag(mExifData, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF, sizeof(value));
+        /* Write the actual comment text, without the trailing NUL character */
+        memcpy(entry->data, value, sizeof(value));
+        /* create_tag() happens to set the format and components correctly for
+         * EXIF_TAG_USER_COMMENT, so there is nothing more to do. */
+        entry->format = EXIF_FORMAT_ASCII;
+    }
+
 
     //Write back exif data
     jpeg_data_set_exif_data(mJpegData,mExifData);
