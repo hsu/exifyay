@@ -113,8 +113,8 @@ int main(int argc, char **argv)
     entry->components = 4;
 
     /* GPS Data */
-    double dlat = 37.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
-    double dlon = -122.12345678987654321; // we supposed that your GPS data is Double if its not skip this step
+    double dlat = 37.667788; // we supposed that your GPS data is Double if its not skip this step
+    double dlon = -122.667788; // we supposed that your GPS data is Double if its not skip this step
     double dalt = 5.4321;
 
     /* GPS Lat */
@@ -125,20 +125,15 @@ int main(int argc, char **argv)
         // Set the field's format and number of components, this is very important!
         entry->format = EXIF_FORMAT_RATIONAL;
         entry->components = 3;
-        // Degrees
-        // float lat = 37.12345678987654321;
-        // ExifRational value;
-        // value.numerator = (unsigned)(lat * 1000000.0);
-        // value.denominator = (unsigned)1000000 ;
-        // exif_set_rational(entry->data, EXIF_BYTE_ORDER_INTEL, value);
 
         // convert double to unsigned long array
         double coord = fabs(dlat);
-        double sec = round(coord * 3600);
+        double sec = (coord * 3600);
         int deg = sec / 3600;
-        sec = fabs(sec - 3600*((int)sec/3600));
+        sec = sec - 3600.0*((int)sec/3600);
         int min = sec / 60;
-        sec = sec - 60*((int)sec/60);
+        sec = sec - 60.0*((int)sec/60);
+        // printf("debug sec %f\n", sec);
 
         ExifRational secr;
         secr.numerator = (unsigned)(sec * 1000000.0);
@@ -167,11 +162,12 @@ int main(int argc, char **argv)
         entry->components = 3;
         // convert double to unsigned long array
         double coord = fabs(dlon);
-        double sec = round(coord * 3600);
+        double sec = (coord * 3600);
         int deg = sec / 3600;
-        sec = fabs(sec - 3600*((int)sec/3600));
+        sec = sec - 3600.0*((int)sec/3600);
         int min = sec / 60;
-        sec = sec - 60*((int)sec/60);
+        sec = sec - 60.0*((int)sec/60);
+        // printf("debug sec %f\n", sec);
 
         ExifRational secr;
         secr.numerator = (unsigned)(sec * 1000000.0);
